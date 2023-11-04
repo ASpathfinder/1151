@@ -3,23 +3,117 @@
 #include <string.h>
 #include <ctype.h>
 
-void print_usage(void); 
+#define MAX_STR_LEN 20
+
+struct route {
+    // The name of the climbing route
+    char name[MAX_STR_LEN];
+    // The difficulty of the route
+    int difficulty;
+    // The length of the route in metres
+    int length;
+    // A pointer to the next `struct route` in the logbook 
+    struct route *next;
+};
+
+struct logbook {
+    // A pointer to the first `struct route` in the list
+    struct route *routes;
+};
+
+struct route *create_route(
+    char name[MAX_STR_LEN], 
+    int difficulty, 
+    int length
+);
+void scan_string(char string[MAX_STR_LEN]);
+int scan_token(char *buffer, int buffer_size);
+void print_usage(void);
+
 
 int main(void) {
     printf("Welcome to 1511 Climb! \n");
     printf("Log all of your climbing adventures here! \n");
-    printf("Enter command: ");
     
+    struct logbook *current_logbook;
+    current_logbook = (struct logbook *)malloc(100*sizeof(int));
     char command;
+    
+    printf("Enter command: ");
     while(scanf(" %c", &command) != EOF) {
         if(command == '?')
             print_usage();
+        else if(command == 'r') {
+            char name[MAX_STR_LEN];
+            int difficulty, length;
+
+            scan_string(name);
+            scanf(" %d %d", &difficulty, &length);
+
+            struct route *new_route = create_route(name, difficulty, length);
+            struct route *head_route = current_logbook->routes;
+            if(head_route != NULL) {
+                struct route *current_route = head_route;
+                while(current_route->next != NULL) {
+                    current_route = current_route->next;
+                }
+                current_route->next = new_route;
+            } else
+                current_logbook->routes = new_route;
+            
+            printf("Route '%s' added successfully!\n", new_route->name);
+        }
+        
         printf("Enter command: ");
     }
-
+    
     printf("\nGoodbye\n");
 
     return 0;
+}
+
+struct route *create_route(
+    char name[MAX_STR_LEN],
+    int difficulty, 
+    int length
+) {
+    struct route *new_route;
+    new_route = (struct route *)malloc(100*sizeof(int));
+    strcpy(new_route->name, name);
+    new_route->difficulty = difficulty;
+    new_route->length = length;
+
+    return new_route;
+}
+
+void scan_string(char string[MAX_STR_LEN]) {
+    scan_token(string, MAX_STR_LEN);
+}
+
+int scan_token(char *buffer, int buffer_size) {
+    if (buffer_size == 0) {
+        return 0;
+    }
+
+    char c;
+    int i = 0;
+    int num_scanned = 0;
+
+    // Consume all leading whitespace
+    scanf(" ");
+
+    // Scan in characters until whitespace
+    while (i < buffer_size - 1
+        && (num_scanned = scanf("%c", &c)) == 1 
+        && !isspace(c)) {
+        buffer[i++] = c;
+    }
+
+    if (i > 0) {
+        buffer[i] = '\0';
+    }
+
+    return num_scanned;
 }
 
 void print_usage(void) {
