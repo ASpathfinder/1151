@@ -30,7 +30,8 @@ void scan_string(char string[MAX_STR_LEN]);
 int scan_token(char *buffer, int buffer_size);
 void print_usage(void);
 void print_one_route(int position, struct route *route);
-
+int command_r_validate_arguments(char *name, int difficulty, int length, struct logbook* logbook);
+struct route *search_for_route(char *name, struct logbook* logbook);
 
 int main(void) {
     printf("Welcome to 1511 Climb! \n");
@@ -50,19 +51,20 @@ int main(void) {
 
             scan_string(name);
             scanf(" %d %d", &difficulty, &length);
-
-            struct route *new_route = create_route(name, difficulty, length);
-            struct route *head_route = current_logbook->routes;
-            if(head_route != NULL) {
-                struct route *current_route = head_route;
-                while(current_route->next != NULL) {
-                    current_route = current_route->next;
-                }
-                current_route->next = new_route;
-            } else
-                current_logbook->routes = new_route;
-            
-            printf("Route '%s' added successfully!\n", new_route->name);
+            if(command_r_validate_arguments(name, difficulty, length, current_logbook)) {
+                struct route *new_route = create_route(name, difficulty, length);
+                struct route *head_route = current_logbook->routes;
+                if(head_route != NULL) {
+                    struct route *current_route = head_route;
+                    while(current_route->next != NULL) {
+                        current_route = current_route->next;
+                    }
+                    current_route->next = new_route;
+                } else
+                    current_logbook->routes = new_route;
+                
+                printf("Route '%s' added successfully!\n", new_route->name);
+            }
         } else if(command == 'p') {
             struct route *current_route = current_logbook->routes;
             if(current_route == NULL)
@@ -187,3 +189,30 @@ void print_one_route(int position, struct route *route) {
     printf("|    Length (m): %2d    |\n", route->length);
     printf("\\--------- || ---------/\n");
 }
+
+int command_r_validate_arguments(char *name, int difficulty, int length, struct logbook* logbook) {
+    if(difficulty <= 0 || difficulty > 39) {
+        printf("ERROR: Route difficulty must be between 1 and 39\n");
+        return 0;
+    }
+    if(length <= 0 || length > 60) {
+        printf("ERROR: Route length must be between 1m and 60m\n");
+        return 0;
+    }
+    if(search_for_route(name, logbook)) {
+        printf("ERROR: A route with the name '%s' already exists in this logbook\n", name);
+        return 0;
+    }
+    return 1;
+}
+
+struct route *search_for_route(char *name, struct logbook* logbook) {
+    struct route *current_route = logbook->routes;
+    while(current_route != NULL) {
+        if(!strcmp(name, current_route->name))
+            return current_route;
+        current_route = current_route->next;
+    }
+    return 0;
+}
+
