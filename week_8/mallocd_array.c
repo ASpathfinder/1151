@@ -63,7 +63,6 @@ double calculate_average(int *array, int size) {
     float sum = 0;
     float average = 0.0;
     for(int i=0;i<size;i++) {
-        printf("%d\n", array[i]);
         sum += array[i];
     }
     average = sum / size;
