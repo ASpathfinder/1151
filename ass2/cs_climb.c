@@ -31,7 +31,9 @@ int scan_token(char *buffer, int buffer_size);
 void print_usage(void);
 void print_one_route(int position, struct route *route);
 int command_r_validate_arguments(char *name, int difficulty, int length, struct logbook* logbook);
+int command_l_validate_length_change(struct route* head, struct route* end, int length_changed);
 struct route *search_for_route(char *name, struct logbook* logbook);
+struct route *get_route_by_index(int index, struct route* head);
 struct route *insert_route_before(char *name, int difficulty, int length, struct route *head, char *route_to_insert_before);
 int route_index(char *name, struct route* head);
 
@@ -115,6 +117,45 @@ int main(void) {
                     current_logbook->routes = insert_route_before(name, difficulty, length, current_logbook->routes, route_to_insert_before);
                 else
                     printf("ERROR: No route with the name '%s' exists in this logbook\n", route_to_insert_before);
+            }
+        // stage 2.3
+        } else if(command == 'l') {
+            char route_1_name[MAX_STR_LEN], route_2_name[MAX_STR_LEN];
+            struct route *route_1;
+            struct route *route_2;
+            int route_1_index, route_2_index;
+            int length_change;
+
+            scan_string(route_1_name);
+            scan_string(route_2_name);
+            scanf(" %d", &length_change);
+            
+            route_1_index = route_index(route_1_name, current_logbook->routes);
+            route_2_index = route_index(route_2_name, current_logbook->routes);
+            if(route_1_index == -1) {
+                printf("ERROR: No route with the name '%s' exists in this logbook\n", route_1_name);
+            } else if(route_2_index == -1) {
+                printf("ERROR: No route with the name '%s' exists in this logbook\n", route_2_name);
+            } else {
+                if(route_1_index > route_2_index) {
+                    route_1 = get_route_by_index(route_2_index, current_logbook->routes);
+                    route_2 = get_route_by_index(route_1_index, current_logbook->routes);
+                } else {
+                    route_1 = get_route_by_index(route_1_index, current_logbook->routes);
+                    route_2 = get_route_by_index(route_2_index, current_logbook->routes);
+                }
+                if(command_l_validate_length_change(route_1, route_2, length_change)) {
+                    struct route *current_route = route_1;
+                    struct route *prev_route = NULL;
+                    int old_length;
+                    while(prev_route != route_2) {
+                        old_length = current_route->length;
+                        current_route->length = current_route->length + length_change;
+                        printf("Length of '%s' updated from %dm to %dm\n", current_route->name, old_length, current_route->length);
+                        prev_route = current_route;
+                        current_route = current_route->next;
+                    }
+                }
             }
         }
         
@@ -248,6 +289,22 @@ int command_r_validate_arguments(char *name, int difficulty, int length, struct 
     return 1;
 }
 
+int command_l_validate_length_change(struct route* head, struct route* end, int length_changed) {
+    struct route *current_route = head;
+    struct route *prev_route = NULL;
+    int new_length;
+    while(prev_route != end) {
+        new_length = current_route->length + length_changed;
+        if(new_length <= 0 || new_length > 60) {
+            printf("ERROR: Invalid length change! No route lengths have been changed\n");
+            return 0;
+        }
+        prev_route = current_route;
+        current_route = current_route->next;
+    }
+    return 1;
+}
+
 struct route *search_for_route(char *name, struct logbook* logbook) {
     struct route *current_route = logbook->routes;
     while(current_route != NULL) {
@@ -268,6 +325,17 @@ int route_index(char *name, struct route* head) {
         current_route = current_route->next;
     }
     return -1;
+}
+
+struct route *get_route_by_index(int index, struct route* head) {
+    struct route *current_route = head;
+    int i = 0;
+    while(current_route != NULL) {
+        if(i++ == index)
+            return current_route;
+        current_route = current_route->next;
+    }
+    return NULL;
 }
 
 struct route *insert_route_before(char *name, int difficulty, int length, struct route *head, char *route_to_insert_before) {
