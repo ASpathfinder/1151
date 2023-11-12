@@ -310,7 +310,7 @@ int main(void) {
             else {
                 int i = 0;
                 while(current_route != NULL) {
-                    printf("Route #%d: %s", ++i, current_route->name);
+                    printf("Route #%d: %s\n", ++i, current_route->name);
                     struct attempt *current_attempt = current_route->attempts;
                     while(current_attempt != NULL) {
                         print_one_attempt(current_attempt->climber, current_attempt->type, current_attempt->rating);
@@ -368,6 +368,7 @@ struct route *create_route(
     new_route->difficulty = difficulty;
     new_route->length = length;
     new_route->attempts = NULL;
+    new_route->next = NULL;
 
     return new_route;
 }
@@ -412,7 +413,7 @@ struct route *search_for_route(char *name, struct logbook* logbook) {
             return current_route;
         current_route = current_route->next;
     }
-    return 0;
+    return NULL;
 }
 
 int route_index(char *name, struct route* head) {
@@ -464,9 +465,10 @@ struct route *insert_route_before(char *name, int difficulty, int length, struct
         current = current->next;
     }
 
-    if(current == NULL)
+    if(current == NULL) {
         printf("Route '%s' inserted successfully!\n", new_one->name);
         return new_one;
+    }
 
     current->next = new_one;
     
