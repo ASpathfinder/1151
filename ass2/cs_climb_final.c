@@ -282,6 +282,7 @@ int main(void) {
                     printf("'%s' swapped positions with '%s'!\n", route_1_name, route_2_name);
                 }
             }
+        // stage 3.1
         } else if(command == 'a') {
             char climber[MAX_STR_LEN], route_name[MAX_STR_LEN];
             int rating;
@@ -299,6 +300,23 @@ int main(void) {
                     printf("ERROR: No route with the name '%s' exists in this logbook\n", route_name);
                 else if((current_route->attempts = insert_climber_latest_attempt(climber, type, rating, current_route)) != NULL){
                     printf("Logged attempt of '%s' by %s\n", current_route->name, climber);
+                }
+            }
+        // stage 3.2
+        } else if(command == 'P') {
+            struct route *current_route = current_logbook->routes;
+            if(current_route == NULL)
+                printf("There are no routes in this logbook!\n");
+            else {
+                int i = 0;
+                while(current_route != NULL) {
+                    printf("Route #%d: %s", ++i, current_route->name);
+                    struct attempt *current_attempt = current_route->attempts;
+                    while(current_attempt != NULL) {
+                        print_one_attempt(current_attempt->climber, current_attempt->type, current_attempt->rating);
+                        current_attempt = current_attempt->next;
+                    }
+                    current_route = current_route->next;
                 }
             }
         }
@@ -513,6 +531,7 @@ struct attempt *insert_climber_latest_attempt(char *climber, enum attempt_type t
 
     int n = get_climbers_attempt_insert_point(climber, head);
     struct attempt *new_one = create_attempt(climber, type, rating);
+    printf("final is: %d\n", n);
 
     if(n == 0) {
         new_one->next = head;
@@ -528,10 +547,15 @@ struct attempt *insert_climber_latest_attempt(char *climber, enum attempt_type t
             new_one->next = old_next;
             return head;
         }
-        if(current->next == NULL && n == -1)
-            current->next = new_one;
+        if(current->next == NULL)
+            break;
         current = current->next;
     }
+
+    if(current == NULL)
+        return new_one;
+
+    current->next = new_one;
     
     return head;
 }
