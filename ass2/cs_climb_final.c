@@ -28,6 +28,12 @@ enum attempt_type {FIRST_GO, SUCCESS, FAIL, INVALID_TYPE};
 ////////////////////////////////////////////////////////////////////////////////
 
 // Provided structs
+struct attempt {
+    char climber[MAX_STR_LEN];
+    enum attempt_type type;
+    int rating;
+    struct attempt *next;
+};
 
 // Represents a single climbing route in the logbook
 struct route {
@@ -39,6 +45,8 @@ struct route {
     int length;
     // A pointer to the next `struct route` in the logbook 
     struct route *next;
+    // Stores a pointer to the head of the `attempts` list
+    struct attempt *attempts;
 };
 
 // Represents the logbook that contains info on each climbing route
@@ -84,6 +92,10 @@ struct route *search_for_route(char *name, struct logbook* logbook);
 struct route *get_route_by_index(int index, struct route* head);
 struct route *insert_route_before(char *name, int difficulty, int length, struct route *head, char *route_to_insert_before);
 int route_index(char *name, struct route* head);
+struct attempt *create_attempt(char *climber, enum attempt_type type, int rating);
+struct attempt *search_for_attempt(char *climber, struct attempt *head);
+int get_climbers_attempt_insert_point(char *climber, struct attempt *head);
+struct attempt *insert_climber_latest_attempt(char *climber, enum attempt_type type, int rating, struct route *route);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -270,6 +282,25 @@ int main(void) {
                     printf("'%s' swapped positions with '%s'!\n", route_1_name, route_2_name);
                 }
             }
+        } else if(command == 'a') {
+            char climber[MAX_STR_LEN], route_name[MAX_STR_LEN];
+            int rating;
+            scan_string(climber);
+            enum attempt_type type = scan_attempt_type();
+            scanf(" %d", &rating);
+            scan_string(route_name);
+            if(type == INVALID_TYPE)
+                printf("ERROR: Attempt type invalid\n");
+            else if(rating < 0 || rating > 3)
+                printf("ERROR: Rating must be between 0 and 3\n");
+            else {
+                struct route *current_route = search_for_route(route_name, current_logbook);
+                if(!current_route)
+                    printf("ERROR: No route with the name '%s' exists in this logbook\n", route_name);
+                else if((current_route->attempts = insert_climber_latest_attempt(climber, type, rating, current_route)) != NULL){
+                    printf("Logged attempt of '%s' by %s\n", current_route->name, climber);
+                }
+            }
         }
         
         printf("Enter command: ");
@@ -314,10 +345,11 @@ struct route *create_route(
     int length
 ) {
     struct route *new_route;
-    new_route = (struct route *)malloc(100*sizeof(int));
+    new_route = malloc(sizeof(struct route));
     strcpy(new_route->name, name);
     new_route->difficulty = difficulty;
     new_route->length = length;
+    new_route->attempts = NULL;
 
     return new_route;
 }
@@ -421,6 +453,86 @@ struct route *insert_route_before(char *name, int difficulty, int length, struct
     current->next = new_one;
     
     printf("Route '%s' inserted successfully!\n", new_one->name);
+    return head;
+}
+
+struct attempt *create_attempt(char *climber, enum attempt_type type, int rating) {
+    struct attempt *new_attempt = malloc(sizeof(struct attempt));
+    strcpy(new_attempt->climber, climber);
+    new_attempt->type = type;
+    new_attempt->rating = rating;
+    new_attempt->next = NULL;
+    return new_attempt;
+}
+
+struct attempt *search_for_attempt(char *climber, struct attempt *head) {
+    struct attempt *current_attempt = head;
+    while(current_attempt != NULL) {
+        if(!strcmp(current_attempt->climber, climber)) {
+            return current_attempt;
+        }
+        current_attempt = current_attempt->next;
+    }
+    return NULL;
+}
+
+int get_climbers_attempt_insert_point(char *climber, struct attempt *head) {
+    struct attempt *current_attempt = head;
+    int i = 0;
+    int cmp_result = 0;
+    while(current_attempt != NULL) {
+        printf("%d\n", i);
+        cmp_result = strcmp(current_attempt->climber, climber);
+        if(cmp_result >= 0) {
+            return i;
+        } else {
+            struct attempt *prev_attempt = current_attempt;
+            current_attempt = current_attempt->next;
+            i++;
+            while(current_attempt != NULL && strcmp(prev_attempt->climber, current_attempt->climber) == 0) {
+                i++;
+                current_attempt = current_attempt->next;
+            }
+            if(current_attempt == NULL) {
+                return -1;
+            } else {
+                continue;
+            }
+        }
+    }
+    return 0;
+}
+
+struct attempt *insert_climber_latest_attempt(char *climber, enum attempt_type type, int rating, struct route *route) {
+    struct attempt *head = route->attempts;
+    
+    if(search_for_attempt(climber, head) && type == FIRST_GO) {
+        printf("ERROR: '%s' has already attempted '%s' - they can't get it on their first go!\n", climber, route->name);
+        return NULL;
+    }
+
+    int n = get_climbers_attempt_insert_point(climber, head);
+    struct attempt *new_one = create_attempt(climber, type, rating);
+
+    if(n == 0) {
+        new_one->next = head;
+        return new_one;
+    }
+
+    struct attempt *current = head;
+    int number = 1;
+    while(current != NULL) {
+        if(number++ == n) {
+            struct attempt *old_next = current->next;
+            current->next = new_one;
+            new_one->next = old_next;
+            return head;
+        }
+        if(current->next == NULL && n == -1)
+            current->next = new_one;
+        current = current->next;
+    }
+    
     return head;
 }
 
