@@ -97,6 +97,10 @@ struct attempt *search_for_attempt(char *climber, struct attempt *head);
 int get_climbers_attempt_insert_point(char *climber, struct attempt *head);
 struct attempt *insert_climber_latest_attempt(char *climber, enum attempt_type type, int rating, struct route *route);
 float average_attempt(struct attempt *head);
+struct route *remove_route(char *name, struct route **head);
+void free_route_memory(struct route *route);
+void free_attempt_memory(struct attempt *attempt);
+void free_logbook_memory(struct logbook *logbook);
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -324,11 +328,21 @@ int main(void) {
                     current_route = current_route->next;
                 }
             }
+        } else if(command == 'R') {
+            char route_name[MAX_STR_LEN];
+            scan_string(route_name);
+            struct route *removed_route = remove_route(route_name, &(current_logbook->routes));
+            if(removed_route) {
+                free_route_memory(removed_route);
+                printf("Removed route '%s' from logbook\n", route_name);
+            } else
+                printf("ERROR: No route with the name '%s' exists in this logbook\n", route_name);
         }
         
         printf("Enter command: ");
     }
     
+    free_logbook_memory(current_logbook);
     printf("\nGoodbye\n");
 
     return 0;
@@ -578,6 +592,54 @@ float average_attempt(struct attempt *head) {
         current_attempt = current_attempt->next;
     }
     return (float)sum / i;
+}
+
+struct route *remove_route(char *name, struct route **head) {
+    struct route *current = *head;
+    struct route *prev = NULL;
+    while(current != NULL) {
+        if(strcmp(current->name, name) == 0) {
+            if(prev == NULL)
+                *head = current->next;
+            else
+                prev->next = current->next;
+            current->next = NULL;
+            break;
+        }
+        prev = current;
+        current = current->next;    
+    }
+
+    if(current == NULL)
+        return NULL;
+
+    return current;
+}
+
+void free_logbook_memory(struct logbook *logbook) {
+    struct route *current_route = logbook->routes;
+    struct route *next = NULL;
+    while(current_route != NULL) {
+        next = current_route->next;
+        free_route_memory(current_route);
+        current_route = next;
+    }
+    free(logbook);
+}
+
+void free_route_memory(struct route *route) {
+    struct attempt *current_attempt = route->attempts;
+    struct attempt *next = NULL;
+    while(current_attempt != NULL) {
+        next = current_attempt->next;
+        free_attempt_memory(current_attempt);
+        current_attempt = next;
+    }
+    free(route);
+}
+
+void free_attempt_memory(struct attempt *attempt) {
+    free(attempt);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
