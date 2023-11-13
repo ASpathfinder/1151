@@ -96,7 +96,7 @@ struct attempt *create_attempt(char *climber, enum attempt_type type, int rating
 struct attempt *search_for_attempt(char *climber, struct attempt *head);
 int get_climbers_attempt_insert_point(char *climber, struct attempt *head);
 struct attempt *insert_climber_latest_attempt(char *climber, enum attempt_type type, int rating, struct route *route);
-
+float average_attempt(struct attempt *head);
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -310,7 +310,12 @@ int main(void) {
             else {
                 int i = 0;
                 while(current_route != NULL) {
-                    printf("Route #%d: %s\n", ++i, current_route->name);
+                    printf("Route #%d: %s\nDifficulty: %d | Length: %dm | Avg rating: %.1lf/3.0\n",
+                    ++i,
+                    current_route->name,
+                    current_route->difficulty,
+                    current_route->length,
+                    average_attempt(current_route->attempts));
                     struct attempt *current_attempt = current_route->attempts;
                     while(current_attempt != NULL) {
                         print_one_attempt(current_attempt->climber, current_attempt->type, current_attempt->rating);
@@ -501,7 +506,6 @@ int get_climbers_attempt_insert_point(char *climber, struct attempt *head) {
     int i = 0;
     int cmp_result = 0;
     while(current_attempt != NULL) {
-        printf("%d\n", i);
         cmp_result = strcmp(current_attempt->climber, climber);
         if(cmp_result >= 0) {
             return i;
@@ -533,7 +537,6 @@ struct attempt *insert_climber_latest_attempt(char *climber, enum attempt_type t
 
     int n = get_climbers_attempt_insert_point(climber, head);
     struct attempt *new_one = create_attempt(climber, type, rating);
-    printf("final is: %d\n", n);
 
     if(n == 0) {
         new_one->next = head;
@@ -560,6 +563,21 @@ struct attempt *insert_climber_latest_attempt(char *climber, enum attempt_type t
     current->next = new_one;
     
     return head;
+}
+
+float average_attempt(struct attempt *head) {
+    if(head == NULL)
+        return 0.0;
+
+    struct attempt *current_attempt = head;
+    int sum = 0;
+    int i = 0;
+    while(current_attempt != NULL) {
+        sum += current_attempt->rating;
+        ++i;
+        current_attempt = current_attempt->next;
+    }
+    return (float)sum / i;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
