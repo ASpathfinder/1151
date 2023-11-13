@@ -102,6 +102,7 @@ void free_route_memory(struct route *route);
 void free_attempt_memory(struct attempt *attempt);
 void free_logbook_memory(struct logbook *logbook);
 int remove_climbers_attempts(char *climber, struct route *head_route);
+void duplicate_attempts(char *src_climber, char *dst_climber, struct route *head_route);
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -348,6 +349,12 @@ int main(void) {
                 printf("ERROR: %s has not logged any attempts\n", climber_name);
             else
                 printf("Deleted %d attempt(s) logged by %s\n", removed_count, climber_name);
+        } else if(command == 'd') {
+            char climber_1[MAX_STR_LEN];
+            char climber_2[MAX_STR_LEN];
+            scan_string(climber_1);
+            scan_string(climber_2);
+
         }
         
         printf("Enter command: ");
@@ -681,6 +688,28 @@ int remove_climbers_attempts(char *climber, struct route *head_route) {
 
     return count;
 }
+
+void duplicate_attempts(char *src_climber, char *dst_climber, struct route *head_route) {
+    struct route *current_route = head_route;
+    while(current_route != NULL) {
+        struct attempt *current_attempt = current_route->attempts;
+        struct attempt *dumplicate_stack_head = NULL;
+        struct attempt *new_attempt = NULL;
+        while(current_attempt != NULL) {
+            if(strcmp(current_attempt->climber, src_climber) == 0) {
+                new_attempt = create_attempt(dst_climber, current_attempt->type, current_attempt->rating);
+                if(dumplicate_stack_head == NULL) {
+                    dumplicate_stack_head = new_attempt;
+                } else {
+                    new_attempt->next = dumplicate_stack_head;
+                    dumplicate_stack_head = new_attempt;
+                }
+            }
+            current_attempt = current_attempt->next;
+        }
+    }
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////  PROVIDED FUNCTIONS  ///////////////////////////////
