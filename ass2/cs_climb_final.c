@@ -101,6 +101,7 @@ struct route *remove_route(char *name, struct route **head);
 void free_route_memory(struct route *route);
 void free_attempt_memory(struct attempt *attempt);
 void free_logbook_memory(struct logbook *logbook);
+int remove_climbers_attempts(char *climber, struct route *head_route);
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -328,6 +329,7 @@ int main(void) {
                     current_route = current_route->next;
                 }
             }
+        // stage 3.3
         } else if(command == 'R') {
             char route_name[MAX_STR_LEN];
             scan_string(route_name);
@@ -337,6 +339,15 @@ int main(void) {
                 printf("Removed route '%s' from logbook\n", route_name);
             } else
                 printf("ERROR: No route with the name '%s' exists in this logbook\n", route_name);
+        // stage 3.4
+        } else if(command == 'D') {
+            char climber_name[MAX_STR_LEN];
+            scan_string(climber_name);
+            int removed_count = remove_climbers_attempts(climber_name, current_logbook->routes);
+            if(removed_count == 0)
+                printf("ERROR: %s has not logged any attempts\n", climber_name);
+            else
+                printf("Deleted %d attempt(s) logged by %s\n", removed_count, climber_name);
         }
         
         printf("Enter command: ");
@@ -640,6 +651,35 @@ void free_route_memory(struct route *route) {
 
 void free_attempt_memory(struct attempt *attempt) {
     free(attempt);
+}
+
+int remove_climbers_attempts(char *climber, struct route *head_route) {
+    struct route *current_route = head_route;
+    int count = 0;
+
+    while(current_route != NULL) {
+        struct attempt *current = current_route->attempts;
+        struct attempt *prev = NULL;
+        struct attempt *next = NULL;
+        while(current != NULL) {
+            next = current->next;
+            if(strcmp(current->climber, climber) == 0) {
+                if(prev == NULL)
+                    current_route->attempts = current->next;
+                else
+                    prev->next = current->next;
+                free_attempt_memory(current);
+                current = next;
+                count++;
+                continue;
+            }
+            prev = current;
+            current = next;
+        }
+        current_route = current_route->next;
+    }
+
+    return count;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
