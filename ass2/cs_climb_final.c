@@ -360,7 +360,7 @@ int main(void) {
             scan_string(climber_1);
             scan_string(climber_2);
             if(strcmp(climber_1, climber_2) == 0)
-                printf("ERROR: Cannot duplicate attempts made by the same climber");
+                printf("ERROR: Cannot duplicate attempts made by the same climber\n");
             else
                 duplicate_attempts(climber_2, climber_1, current_logbook->routes);
         }
@@ -728,7 +728,7 @@ void duplicate_attempts(char *src_climber, char *dst_climber, struct route *head
             current_attempt = current_attempt->next;
         }
         if(dumplicate_stack_head == NULL) {
-            printf("ERROR: %s has not logged any attempts", src_climber);
+            printf("ERROR: %s has not logged any attempts\n", src_climber);
         } else {
             current_attempt = dumplicate_stack_head;
             while(current_attempt != NULL) {
