@@ -99,7 +99,7 @@ struct attempt *insert_climber_latest_attempt(char *climber, enum attempt_type t
 float average_attempt(struct attempt *head);
 struct route *remove_route(char *name, struct route **head);
 void free_route_memory(struct route *route);
-void free_attempt_memory(struct attempt *attempt);
+void free_attempt_memory(struct attempt *head);
 void free_logbook_memory(struct logbook *logbook);
 int remove_climbers_attempts(char *climber, struct route *head_route);
 void duplicate_attempts(char *src_climber, char *dst_climber, struct route *head_route);
@@ -304,8 +304,12 @@ int main(void) {
                 struct route *current_route = search_for_route(route_name, current_logbook);
                 if(!current_route)
                     printf("ERROR: No route with the name '%s' exists in this logbook\n", route_name);
-                else if((current_route->attempts = insert_climber_latest_attempt(climber, type, rating, current_route)) != NULL){
-                    printf("Logged attempt of '%s' by %s\n", current_route->name, climber);
+                else {
+                    struct attempt *new_head = insert_climber_latest_attempt(climber, type, rating, current_route);
+                    if(new_head != NULL) {
+                        current_route->attempts = new_head;
+                        printf("Logged attempt of '%s' by %s\n", current_route->name, climber);
+                    }
                 }
             }
         // stage 3.2
@@ -349,12 +353,16 @@ int main(void) {
                 printf("ERROR: %s has not logged any attempts\n", climber_name);
             else
                 printf("Deleted %d attempt(s) logged by %s\n", removed_count, climber_name);
+        // stage 3.5
         } else if(command == 'd') {
             char climber_1[MAX_STR_LEN];
             char climber_2[MAX_STR_LEN];
             scan_string(climber_1);
             scan_string(climber_2);
-
+            if(strcmp(climber_1, climber_2) == 0)
+                printf("ERROR: Cannot duplicate attempts made by the same climber");
+            else
+                duplicate_attempts(climber_2, climber_1, current_logbook->routes);
         }
         
         printf("Enter command: ");
@@ -525,9 +533,8 @@ struct attempt *create_attempt(char *climber, enum attempt_type type, int rating
 struct attempt *search_for_attempt(char *climber, struct attempt *head) {
     struct attempt *current_attempt = head;
     while(current_attempt != NULL) {
-        if(!strcmp(current_attempt->climber, climber)) {
+        if(strcmp(current_attempt->climber, climber) == 0)
             return current_attempt;
-        }
         current_attempt = current_attempt->next;
     }
     return NULL;
@@ -650,14 +657,20 @@ void free_route_memory(struct route *route) {
     struct attempt *next = NULL;
     while(current_attempt != NULL) {
         next = current_attempt->next;
-        free_attempt_memory(current_attempt);
+        free(current_attempt);
         current_attempt = next;
     }
     free(route);
 }
 
-void free_attempt_memory(struct attempt *attempt) {
-    free(attempt);
+void free_attempt_memory(struct attempt *head) {
+    struct attempt *current_attempt = head;
+    struct attempt *next = NULL;
+    while(current_attempt != NULL) {
+        next = current_attempt->next;
+        free(current_attempt);
+        current_attempt = next;
+    }
 }
 
 int remove_climbers_attempts(char *climber, struct route *head_route) {
@@ -695,21 +708,42 @@ void duplicate_attempts(char *src_climber, char *dst_climber, struct route *head
         struct attempt *current_attempt = current_route->attempts;
         struct attempt *dumplicate_stack_head = NULL;
         struct attempt *new_attempt = NULL;
+        struct attempt *dst_climber_attempt = search_for_attempt(dst_climber, current_route->attempts);
         while(current_attempt != NULL) {
             if(strcmp(current_attempt->climber, src_climber) == 0) {
-                new_attempt = create_attempt(dst_climber, current_attempt->type, current_attempt->rating);
-                if(dumplicate_stack_head == NULL) {
+                enum attempt_type type;
+                if(current_attempt->type == FIRST_GO && dst_climber_attempt)
+                    type = SUCCESS;
+                else
+                    type = current_attempt->type;
+
+                new_attempt = create_attempt(dst_climber, type, current_attempt->rating);
+                if(dumplicate_stack_head == NULL)
                     dumplicate_stack_head = new_attempt;
-                } else {
+                else {
                     new_attempt->next = dumplicate_stack_head;
                     dumplicate_stack_head = new_attempt;
                 }
             }
             current_attempt = current_attempt->next;
         }
+        if(dumplicate_stack_head == NULL) {
+            printf("ERROR: %s has not logged any attempts", src_climber);
+        } else {
+            current_attempt = dumplicate_stack_head;
+            while(current_attempt != NULL) {
+                struct attempt *new_head = insert_climber_latest_attempt(current_attempt->climber, current_attempt->type, current_attempt->rating, current_route);
+                if(new_head != NULL) {
+                    current_route->attempts = new_head;
+                    printf("Logged attempt of '%s' by %s\n", current_route->name, current_attempt->climber);
+                }
+                current_attempt = current_attempt->next;
+            }
+        }
+        free_attempt_memory(dumplicate_stack_head);
+        current_route = current_route->next;
     }
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////  PROVIDED FUNCTIONS  ///////////////////////////////
