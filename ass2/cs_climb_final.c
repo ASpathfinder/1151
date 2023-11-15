@@ -236,7 +236,16 @@ struct route *create_route(
     return new_route;
 }
 
-// Stage 1.5
+// 校验 r 命令参数
+//
+// Parameters:
+//      name        - name of the route
+//      difficulty  - difficulty of the route
+//      length      - length of the route
+//      logbook     - pointer to the logbook
+// 
+// Returns:
+//      state       - passed if returns 1 else returns 0
 int command_r_validate_arguments(char *name, int difficulty, int length, struct logbook* logbook) {
     if(difficulty <= 0 || difficulty > 39) {
         printf("ERROR: Route difficulty must be between 1 and 39\n");
@@ -253,6 +262,16 @@ int command_r_validate_arguments(char *name, int difficulty, int length, struct 
     return 1;
 }
 
+// 校验 l 命令参数
+//
+// Parameters:
+//      head            - head of the linked list of route
+//      end             - end of the linked list of route
+//      length_changed  - length change 
+//
+// 
+// Returns:
+//      state       - passed if returns 1 else returns 0
 int command_l_validate_length_change(struct route* head, struct route* end, int length_changed) {
     struct route *current_route = head;
     struct route *prev_route = NULL;
@@ -269,6 +288,14 @@ int command_l_validate_length_change(struct route* head, struct route* end, int 
     return 1;
 }
 
+// 按 name 查找 logbook->routes 中的指定 route 并返回该 route 的指针
+//
+// Parameters:
+//      name            - name of the route
+//      logbook         - pointer to the logbook
+//
+// Returns:
+//      route_pointer   - if found returns pointer of the route else returns NULL
 struct route *search_for_route(char *name, struct logbook* logbook) {
     struct route *current_route = logbook->routes;
     while(current_route != NULL) {
@@ -279,6 +306,14 @@ struct route *search_for_route(char *name, struct logbook* logbook) {
     return NULL;
 }
 
+// 获取指定 name 的 route 在链表中的位置 index
+//
+// Parameters:
+//      name         - name of the route
+//      head         - head of the linked list
+//
+// Returns:
+//      integer      - -1 means not found
 int route_index(char *name, struct route* head) {
     struct route *current_route = head;
     int i=0;
@@ -292,6 +327,14 @@ int route_index(char *name, struct route* head) {
     return -1;
 }
 
+// 按 index 查找从 head route 开始的链表中指定的 route 并返回该 route 的指针
+//
+// Parameters:
+//      index               - index of the route
+//      head                - head of the linked list
+//
+// Returns:
+//      route_pointer       - if found returns pointer of the route else returns NULL
 struct route *get_route_by_index(int index, struct route* head) {
     struct route *current_route = head;
     int i = 0;
@@ -304,6 +347,17 @@ struct route *get_route_by_index(int index, struct route* head) {
     return NULL;
 }
 
+// 在 route 链表中所指定 name 的 route 之前插入新的 route
+//
+// Parameters:
+//      name        - name of the route
+//      difficulty  - difficulty of the route
+//      length      - length of the route
+//      head        - head of linked list
+//      route_to_insert_before  - route to insert before
+//
+// Returns:
+//      route_pointer       - new head pointer of the linked list
 struct route *insert_route_before(char *name, int difficulty, int length, struct route *head, char *route_to_insert_before) {
     struct route *new_one = create_route(name, difficulty, length);   
     int n = route_index(route_to_insert_before, head);
@@ -340,6 +394,15 @@ struct route *insert_route_before(char *name, int difficulty, int length, struct
     return head;
 }
 
+// 创建 attempt 并返回指向该 attempt 的指针
+//
+// Parameters:
+//      climber        - climber name of the attempt
+//      type           - type of the attempt
+//      rating         - rating of the attempt
+//
+// Returns:
+//      attempt_pointer       - a pointer to the newly created struct attempt
 struct attempt *create_attempt(char *climber, enum attempt_type type, int rating) {
     struct attempt *new_attempt = malloc(sizeof(struct attempt));
     strcpy(new_attempt->climber, climber);
@@ -349,6 +412,14 @@ struct attempt *create_attempt(char *climber, enum attempt_type type, int rating
     return new_attempt;
 }
 
+// 查找指定的 attempt
+//
+// Parameters:
+//      climber        - climber name of the attempt
+//      head           - head of the linked list
+//
+// Returns:
+//      attempt_pointer       - if found returns pointer of the attempt else NULL 
 struct attempt *search_for_attempt(char *climber, struct attempt *head) {
     struct attempt *current_attempt = head;
     while(current_attempt != NULL) {
@@ -360,6 +431,16 @@ struct attempt *search_for_attempt(char *climber, struct attempt *head) {
     return NULL;
 }
 
+// 获取在指定 attempt 链表中插入 climber 的 attempt 时的位置
+//
+// Parameters:
+//      climber        - climber name of the attempt
+//      head           - head of the linked list
+//
+// Returns:
+//      insert_point       -    -1: insert to the end of linked list
+//                               0: insert to the head of linked list
+//                            else: insert to the middle of linked list
 int get_climbers_attempt_insert_point(char *climber, struct attempt *head) {
     struct attempt *current_attempt = head;
     int i = 0;
@@ -386,6 +467,16 @@ int get_climbers_attempt_insert_point(char *climber, struct attempt *head) {
     return 0;
 }
 
+// 在指定的 route 中为 climber 插入新的 attempt 
+//
+// Parameters:
+//      climber        - climber name of the attempt
+//      type           - type of the attempt
+//      rating         - rating of the attempt
+//      route          - 
+//
+// Returns:
+//      new_head_pointer_of_linked_list       -    if operatin success returns new head of linked list else NULL 
 struct attempt *insert_climber_latest_attempt(char *climber, enum attempt_type type, int rating, struct route *route) {
     struct attempt *head = route->attempts;
     
@@ -426,6 +517,13 @@ struct attempt *insert_climber_latest_attempt(char *climber, enum attempt_type t
     return head;
 }
 
+// 计算 attempt 链表中所有节点 rating 的平均值
+//
+// Parameters:
+//      head           - head of the linked list
+//
+// Returns:
+//      average        - average of attempts rating
 double average_attempt(struct attempt *head) {
     if(head == NULL) {
         return 0.0;
@@ -442,6 +540,14 @@ double average_attempt(struct attempt *head) {
     return (double)sum / i;
 }
 
+// 从指定的 route 链表中移除由 name 所指定的 route 节点
+//
+// Parameters:
+//      name           - name of the route
+//      head           - head of the linked list
+//
+// Returns:
+//      removed_route  - if removed returns removed route node else return NULL
 struct route *remove_route(char *name, struct route **head) {
     struct route *current = *head;
     struct route *prev = NULL;
@@ -466,6 +572,13 @@ struct route *remove_route(char *name, struct route **head) {
     return current;
 }
 
+// 释放 logbook 中所有的使用 malloc 分配的内存
+//
+// Parameters:
+//      logbook           - pointer of the logbook to free
+//
+// Returns:
+//      void
 void free_logbook_memory(struct logbook *logbook) {
     struct route *current_route = logbook->routes;
     struct route *next = NULL;
@@ -477,6 +590,13 @@ void free_logbook_memory(struct logbook *logbook) {
     free(logbook);
 }
 
+// 释放 route 链表中所有的使用 malloc 分配的内存
+//
+// Parameters:
+//      route           - pointer of the head of the linked list
+//
+// Returns:
+//      void        
 void free_route_memory(struct route *route) {
     struct attempt *current_attempt = route->attempts;
     struct attempt *next = NULL;
@@ -488,6 +608,13 @@ void free_route_memory(struct route *route) {
     free(route);
 }
 
+// 释放 attempt 链表中所有的使用 malloc 分配的内存
+//
+// Parameters:
+//      route           - pointer of the head of the linked list
+//
+// Returns:
+//      void        
 void free_attempt_memory(struct attempt *head) {
     struct attempt *current_attempt = head;
     struct attempt *next = NULL;
@@ -498,6 +625,14 @@ void free_attempt_memory(struct attempt *head) {
     }
 }
 
+// 移除 route 链表中的所有 route 中指定 climber 的所有 attempt
+//
+// Parameters:
+//      climber              - climber name of the attempt
+//      head_route           - head of the route linked list
+//
+// Returns:
+//      void    
 int remove_climbers_attempts(char *climber, struct route *head_route) {
     struct route *current_route = head_route;
     int count = 0;
@@ -528,6 +663,15 @@ int remove_climbers_attempts(char *climber, struct route *head_route) {
     return count;
 }
 
+// 将源 climber 在 route 链表中出现的所有 attempt 复制给目标 climber
+//
+// Parameters:
+//      src_climber              - source of the climber's name
+//      dst_climber              - target of the climber's name
+//      head_route               - head of the linked list
+//
+// Returns:
+//      void    
 void duplicate_attempts(char *src_climber, char *dst_climber, struct route *head_route) {
     struct route *current_route = head_route;
     while(current_route != NULL) {
