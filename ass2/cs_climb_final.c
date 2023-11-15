@@ -96,7 +96,7 @@ struct attempt *create_attempt(char *climber, enum attempt_type type, int rating
 struct attempt *search_for_attempt(char *climber, struct attempt *head);
 int get_climbers_attempt_insert_point(char *climber, struct attempt *head);
 struct attempt *insert_climber_latest_attempt(char *climber, enum attempt_type type, int rating, struct route *route);
-float average_attempt(struct attempt *head);
+double average_attempt(struct attempt *head);
 struct route *remove_route(char *name, struct route **head);
 void free_route_memory(struct route *route);
 void free_attempt_memory(struct attempt *head);
@@ -604,7 +604,7 @@ struct attempt *insert_climber_latest_attempt(char *climber, enum attempt_type t
     return head;
 }
 
-float average_attempt(struct attempt *head) {
+double average_attempt(struct attempt *head) {
     if(head == NULL)
         return 0.0;
 
@@ -616,7 +616,7 @@ float average_attempt(struct attempt *head) {
         ++i;
         current_attempt = current_attempt->next;
     }
-    return (float)sum / i;
+    return (double)sum / i;
 }
 
 struct route *remove_route(char *name, struct route **head) {
