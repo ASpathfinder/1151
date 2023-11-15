@@ -473,7 +473,7 @@ int get_climbers_attempt_insert_point(char *climber, struct attempt *head) {
 //      climber        - climber name of the attempt
 //      type           - type of the attempt
 //      rating         - rating of the attempt
-//      route          - 
+//      route          - head route of the linked list
 //
 // Returns:
 //      new_head_pointer_of_linked_list       -    if operatin success returns new head of linked list else NULL 
