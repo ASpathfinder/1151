@@ -80,28 +80,47 @@ void type_to_string(char *buf, enum attempt_type type);
 ////////////////////////  YOUR FUNCTION PROTOTYPE  /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+// 创建一个 logbook 并返回指向该 logbook 内存地址的指针 
 struct logbook *create_logbook();
+// 创建一个 route 并返回指向该 route 内存地址的指针
 struct route *create_route(
     char name[MAX_STR_LEN], 
     int difficulty, 
     int length
 );
+// 校验 r 命令参数
 int command_r_validate_arguments(char *name, int difficulty, int length, struct logbook* logbook);
+// 校验 l 命令的 length_change 参数
 int command_l_validate_length_change(struct route* head, struct route* end, int length_changed);
+// 按 name 查找 logbook->routes 中的指定 route 并返回该 route 的指针
 struct route *search_for_route(char *name, struct logbook* logbook);
+// 按 index 查找从 head route 开始的链表中指定的 route 并返回该 route 的指针
 struct route *get_route_by_index(int index, struct route* head);
+// 在 route 链表中所指定 name 的 route 之前插入新的 route
 struct route *insert_route_before(char *name, int difficulty, int length, struct route *head, char *route_to_insert_before);
+// 获取指定 name 的 route 在链表中的位置 index
 int route_index(char *name, struct route* head);
+// 创建 attempt 并返回指向该 attempt 的指针
 struct attempt *create_attempt(char *climber, enum attempt_type type, int rating);
+// 搜索由 climber 指定的 attempt 并返回指向该 attempt 的指针
 struct attempt *search_for_attempt(char *climber, struct attempt *head);
+// 获取在指定 attempt 链表中插入 climber 的 attempt 时的位置
 int get_climbers_attempt_insert_point(char *climber, struct attempt *head);
+// 在指定的 route 中为 climber 插入新的 attempt 
 struct attempt *insert_climber_latest_attempt(char *climber, enum attempt_type type, int rating, struct route *route);
+// 计算 attempt 链表中所有节点 rating 的平均值
 double average_attempt(struct attempt *head);
+// 从指定的 route 链表中移除由 name 所指定的 route 节点
 struct route *remove_route(char *name, struct route **head);
+// 释放 route 链表中所有的使用 malloc 分配的内存
 void free_route_memory(struct route *route);
+// 释放 attempt 链表中所有的使用 malloc 分配的内存
 void free_attempt_memory(struct attempt *head);
+// 释放 logbook 中所有的使用 malloc 分配的内存
 void free_logbook_memory(struct logbook *logbook);
+// 移除指定 climber 的所有 attempt
 int remove_climbers_attempts(char *climber, struct route *head_route);
+// 将源 climber 在 route 链表中出现的所有 attempt 复制给目标 climber
 void duplicate_attempts(char *src_climber, char *dst_climber, struct route *head_route);
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
