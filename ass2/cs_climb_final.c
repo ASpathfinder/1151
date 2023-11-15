@@ -299,8 +299,9 @@ int command_l_validate_length_change(struct route* head, struct route* end, int 
 struct route *search_for_route(char *name, struct logbook* logbook) {
     struct route *current_route = logbook->routes;
     while(current_route != NULL) {
-        if(!strcmp(name, current_route->name))
+        if(strcmp(name, current_route->name) == 0) {
             return current_route;
+        }
         current_route = current_route->next;
     }
     return NULL;
@@ -318,7 +319,7 @@ int route_index(char *name, struct route* head) {
     struct route *current_route = head;
     int i=0;
     while(current_route != NULL) {
-        if(!strcmp(name, current_route->name)) {
+        if(strcmp(name, current_route->name) == 0) {
             return i;
         }
         i++;
