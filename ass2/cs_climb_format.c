@@ -96,6 +96,11 @@ struct route *insert_route_before(char *name, int difficulty, int length,
                                   char *route_to_insert_before);
 // 获取指定 name 的 route 在链表中的位置 index
 int route_index(char *name, struct route *head);
+// 按下标交换两个 route 在链表中的位置
+int switch_routes_by_index(int route_1_index, int route_index_2,
+                           struct logbook *current_logbook);
+// 交换两个 route 指针指向的地址
+void swap_routes(struct route **route_1, struct route **route_2);
 // 创建 attempt 并返回指向该 attempt 的指针
 struct attempt *create_attempt(char *climber, enum attempt_type type,
                                int rating);
@@ -398,6 +403,84 @@ struct route *insert_route_before(char *name, int difficulty, int length,
 
     printf("Route '%s' inserted successfully!\n", new_one->name);
     return head;
+}
+
+// 按下标交换两个 route 在链表中的位置
+//
+// Parameters:
+//      route_1_index        - first route's index of linked list
+//      route_2_index        - second route's index of linked list
+//      current_logbook      - pointer to the logbook
+//
+// Returns:
+//      state                - 1: success
+//                            -1: failed
+int switch_routes_by_index(int route_1_index, int route_2_index,
+                           struct logbook *current_logbook) {
+    struct route *route_1;
+    struct route *route_2;
+    route_1 = get_route_by_index(route_1_index, current_logbook->routes);
+    route_2 = get_route_by_index(route_2_index, current_logbook->routes);
+    if (route_1 == route_2) {
+        printf("ERROR: Cannot swap '%s' with itself\n", route_1->name);
+        return -1;
+    }
+    if (route_1_index > route_2_index) {
+        swap_routes(&route_1, &route_2);
+        int prev = route_1_index;
+        route_1_index = route_2_index;
+        route_2_index = prev;
+    }
+    if (route_1_index == 0) {
+        if (route_2_index - route_1_index == 1) {
+            route_1->next = route_2->next;
+            route_2->next = route_1;
+        } else {
+            int route_2_prev_index = route_2_index - 1;
+            struct route *route_2_prev =
+                get_route_by_index(route_2_prev_index, current_logbook->routes);
+            struct route *route_2_next = route_2->next;
+            route_2->next = route_1->next;
+            route_1->next = route_2_next;
+            route_2_prev->next = route_1;
+        }
+        current_logbook->routes = route_2;  // reset route head
+    } else {
+        if (route_2_index - route_1_index == 1) {
+            struct route *route_1_prev =
+                get_route_by_index(route_1_index - 1, current_logbook->routes);
+            route_1->next = route_2->next;
+            route_2->next = route_1;
+            route_1_prev->next = route_2;
+        } else {
+            int route_1_prev_index = route_1_index - 1;
+            int route_2_prev_index = route_2_index - 1;
+            struct route *route_1_prev =
+                get_route_by_index(route_1_prev_index, current_logbook->routes);
+            struct route *route_2_prev =
+                get_route_by_index(route_2_prev_index, current_logbook->routes);
+            struct route *route_2_next = route_2->next;
+            route_2->next = route_1->next;
+            route_1_prev->next = route_2;
+            route_1->next = route_2_next;
+            route_2_prev->next = route_1;
+        }
+    }
+    return 1;
+}
+
+// 交换两个 route 指针指向的地址
+//
+// Parameters:
+//      route_1        - first route pointer's memory location
+//      route_2        - second route pointer's memory location
+//
+// Returns:
+//      void
+void swap_routes(struct route **route_1, struct route **route_2) {
+    struct route *prev_route1 = *route_1;
+    *route_1 = *route_2;
+    *route_2 = prev_route1;
 }
 
 // 创建 attempt 并返回指向该 attempt 的指针
@@ -870,8 +953,6 @@ void command_l(struct logbook *current_logbook) {
 
 void command_s(struct logbook *current_logbook) {
     char route_1_name[MAX_STR_LEN], route_2_name[MAX_STR_LEN];
-    struct route *route_1;
-    struct route *route_2;
     int route_1_index, route_2_index;
 
     scan_string(route_1_name);
@@ -886,57 +967,8 @@ void command_s(struct logbook *current_logbook) {
         printf("ERROR: No route with the name '%s' exists in this logbook\n",
                route_2_name);
     } else {
-        if (route_1_index > route_2_index) {
-            route_1 =
-                get_route_by_index(route_2_index, current_logbook->routes);
-            route_2 =
-                get_route_by_index(route_1_index, current_logbook->routes);
-        } else {
-            route_1 =
-                get_route_by_index(route_1_index, current_logbook->routes);
-            route_2 =
-                get_route_by_index(route_2_index, current_logbook->routes);
-        }
-        if (route_1 == route_2) {
-            printf("ERROR: Cannot swap '%s' with itself\n", route_1->name);
-        } else {
-            route_1_index = route_index(route_1->name, current_logbook->routes);
-            route_2_index = route_index(route_2->name, current_logbook->routes);
-            if (route_1_index == 0) {
-                if (route_2_index - route_1_index == 1) {
-                    route_1->next = route_2->next;
-                    route_2->next = route_1;
-                } else {
-                    int route_2_prev_index = route_2_index - 1;
-                    struct route *route_2_prev = get_route_by_index(
-                        route_2_prev_index, current_logbook->routes);
-                    struct route *route_2_next = route_2->next;
-                    route_2->next = route_1->next;
-                    route_1->next = route_2_next;
-                    route_2_prev->next = route_1;
-                }
-                current_logbook->routes = route_2;  // reset route head
-            } else {
-                if (route_2_index - route_1_index == 1) {
-                    struct route *route_1_prev = get_route_by_index(
-                        route_1_index - 1, current_logbook->routes);
-                    route_1->next = route_2->next;
-                    route_2->next = route_1;
-                    route_1_prev->next = route_2;
-                } else {
-                    int route_1_prev_index = route_1_index - 1;
-                    int route_2_prev_index = route_2_index - 1;
-                    struct route *route_1_prev = get_route_by_index(
-                        route_1_prev_index, current_logbook->routes);
-                    struct route *route_2_prev = get_route_by_index(
-                        route_2_prev_index, current_logbook->routes);
-                    struct route *route_2_next = route_2->next;
-                    route_2->next = route_1->next;
-                    route_1_prev->next = route_2;
-                    route_1->next = route_2_next;
-                    route_2_prev->next = route_1;
-                }
-            }
+        if (switch_routes_by_index(route_1_index, route_2_index,
+                                   current_logbook) == 1) {
             printf("'%s' swapped positions with '%s'!\n", route_1_name,
                    route_2_name);
         }
