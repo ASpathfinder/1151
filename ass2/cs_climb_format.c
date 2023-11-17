@@ -99,8 +99,6 @@ int route_index(char *name, struct route *head);
 // 按下标交换两个 route 在链表中的位置
 int switch_routes_by_index(int route_1_index, int route_index_2,
                            struct logbook *current_logbook);
-// 交换两个 route 指针指向的地址
-void swap_routes(struct route **route_1, struct route **route_2);
 // 创建 attempt 并返回指向该 attempt 的指针
 struct attempt *create_attempt(char *climber, enum attempt_type type,
                                int rating);
@@ -419,18 +417,19 @@ int switch_routes_by_index(int route_1_index, int route_2_index,
                            struct logbook *current_logbook) {
     struct route *route_1;
     struct route *route_2;
-    route_1 = get_route_by_index(route_1_index, current_logbook->routes);
-    route_2 = get_route_by_index(route_2_index, current_logbook->routes);
+    if (route_1_index > route_2_index) {
+        route_1 = get_route_by_index(route_2_index, current_logbook->routes);
+        route_2 = get_route_by_index(route_1_index, current_logbook->routes);
+    } else {
+        route_1 = get_route_by_index(route_1_index, current_logbook->routes);
+        route_2 = get_route_by_index(route_2_index, current_logbook->routes);
+    }
     if (route_1 == route_2) {
         printf("ERROR: Cannot swap '%s' with itself\n", route_1->name);
         return -1;
     }
-    if (route_1_index > route_2_index) {
-        swap_routes(&route_1, &route_2);
-        int prev = route_1_index;
-        route_1_index = route_2_index;
-        route_2_index = prev;
-    }
+    route_1_index = route_index(route_1->name, current_logbook->routes);
+    route_2_index = route_index(route_2->name, current_logbook->routes);
     if (route_1_index == 0) {
         if (route_2_index - route_1_index == 1) {
             route_1->next = route_2->next;
@@ -467,20 +466,6 @@ int switch_routes_by_index(int route_1_index, int route_2_index,
         }
     }
     return 1;
-}
-
-// 交换两个 route 指针指向的地址
-//
-// Parameters:
-//      route_1        - first route pointer's memory location
-//      route_2        - second route pointer's memory location
-//
-// Returns:
-//      void
-void swap_routes(struct route **route_1, struct route **route_2) {
-    struct route *prev_route1 = *route_1;
-    *route_1 = *route_2;
-    *route_2 = prev_route1;
 }
 
 // 创建 attempt 并返回指向该 attempt 的指针
