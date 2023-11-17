@@ -115,7 +115,7 @@ struct attempt *insert_climber_latest_attempt(char *climber, enum attempt_type t
 // 计算 attempt 链表中所有节点 rating 的平均值
 double average_attempt(struct attempt *head);
 // 从指定的 route 链表中移除由 name 所指定的 route 节点
-struct route *remove_route(char *name, struct route **head);
+struct route *remove_route(char *name, struct route *head);
 // 释放 route 链表中所有的使用 malloc 分配的内存
 void free_route_memory(struct route *route);
 // 释放 attempt 链表中所有的使用 malloc 分配的内存
@@ -626,17 +626,22 @@ double average_attempt(struct attempt *head) {
 //
 // Returns:
 //      removed_route  - if removed returns removed route node else return NULL
-struct route *remove_route(char *name, struct route **head) {
-    struct route *current = *head;
+struct route *remove_route(char *name, struct route *head) {
+    struct route *current = head;
     struct route *prev = NULL;
     while(current != NULL) {
         if(strcmp(current->name, name) == 0) {
             if(prev == NULL) {
-                *head = current->next;
+                head = current->next;
+                printf("Removed route '%s' from logbook\n", current->name);
+                free_route_memory(current);
+                return head;
             } else {
                 prev->next = current->next;
+                printf("Removed route '%s' from logbook\n", current->name);
             }
             current->next = NULL;
+            free_route_memory(current);
             break;
         }
         prev = current;
@@ -644,10 +649,11 @@ struct route *remove_route(char *name, struct route **head) {
     }
 
     if(current == NULL) {
-        return NULL;
+        printf("ERROR: No route with the name '%s' exists in this logbook\n", name);
+        return head;
     }
 
-    return current;
+    return head;
 }
 
 // 释放 logbook 中所有的使用 malloc 分配的内存
@@ -980,13 +986,8 @@ void command_p_uppercase(struct logbook *current_logbook) {
 void command_r_uppercase(struct logbook *current_logbook) {
     char route_name[MAX_STR_LEN];
     scan_string(route_name);
-    struct route *removed_route = remove_route(route_name, &(current_logbook->routes));
-    if(removed_route) {
-        free_route_memory(removed_route);
-        printf("Removed route '%s' from logbook\n", route_name);
-    } else {
-        printf("ERROR: No route with the name '%s' exists in this logbook\n", route_name);
-    }
+    struct route *new_head = remove_route(route_name, current_logbook->routes);
+    current_logbook->routes = new_head;
 }
 
 void command_d_uppercase(struct logbook *current_logbook) {
