@@ -718,7 +718,7 @@ int remove_climbers_attempts(char *climber, struct route *head_route) {
                 } else {
                     prev->next = current->next;
                 }
-                free_attempt_memory(current);
+                free(current);
                 current = next;
                 count++;
                 continue;
