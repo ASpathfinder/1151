@@ -120,6 +120,8 @@ void free_route_memory(struct route *route);
 void free_attempt_memory(struct attempt *head);
 // 释放 logbook 中所有的使用 malloc 分配的内存
 void free_logbook_memory(struct logbook *logbook);
+// 移除指定 route 中 climber 的所有 attempt
+int remove_route_attempts(char *climber, struct route *current_route);
 // 移除指定 climber 的所有 attempt
 int remove_climbers_attempts(char *climber, struct route *head_route);
 // 将指定 attempts 链表中的 attempt 插入到目标 route
@@ -698,6 +700,39 @@ void free_attempt_memory(struct attempt *head) {
     }
 }
 
+// 移除指定 route 中 climber 的所有 attempt
+//
+// Parameters:
+//      climber              - climber name of the attempt
+//      current_route        - current route pointer
+//
+// Returns:
+//      int                  - deleted count
+int remove_route_attempts(char *climber, struct route *current_route) {
+    struct attempt *current = current_route->attempts;
+    struct attempt *prev = NULL;
+    struct attempt *next = NULL;
+    int count = 0;
+    while(current != NULL) {
+        next = current->next;
+        if(strcmp(current->climber, climber) == 0) {
+            if(prev == NULL) {
+                current_route->attempts = current->next;
+            } else {
+                prev->next = current->next;
+            }
+            free(current);
+            current = next;
+            count++;
+            continue;
+        }
+        prev = current;
+        current = next;
+    }
+
+    return count;
+}
+
 // 移除 route 链表中的所有 route 中指定 climber 的所有 attempt
 //
 // Parameters:
@@ -711,25 +746,7 @@ int remove_climbers_attempts(char *climber, struct route *head_route) {
     int count = 0;
 
     while(current_route != NULL) {
-        struct attempt *current = current_route->attempts;
-        struct attempt *prev = NULL;
-        struct attempt *next = NULL;
-        while(current != NULL) {
-            next = current->next;
-            if(strcmp(current->climber, climber) == 0) {
-                if(prev == NULL) {
-                    current_route->attempts = current->next;
-                } else {
-                    prev->next = current->next;
-                }
-                free(current);
-                current = next;
-                count++;
-                continue;
-            }
-            prev = current;
-            current = next;
-        }
+        count = count + remove_route_attempts(climber, current_route);
         current_route = current_route->next;
     }
 
