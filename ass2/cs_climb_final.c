@@ -122,6 +122,10 @@ void free_attempt_memory(struct attempt *head);
 void free_logbook_memory(struct logbook *logbook);
 // 移除指定 climber 的所有 attempt
 int remove_climbers_attempts(char *climber, struct route *head_route);
+// 将指定 attempts 链表中的 attempt 插入到目标 route
+void copy_attempts_to_dst(struct attempt *head, struct route *current_route);
+// 选择 attempts，返回临时 attempt 链表
+struct attempt *select_attempts(char *src_climber, char *dst_climber, struct attempt *head);
 // 将源 climber 在 route 链表中出现的所有 attempt 复制给目标 climber
 void duplicate_attempts(char *src_climber, char *dst_climber, struct route *head_route);
 // Stage 1.3 命令 r 
@@ -732,6 +736,63 @@ int remove_climbers_attempts(char *climber, struct route *head_route) {
     return count;
 }
 
+// 按 climber name 选择 attempts，并临时放置到一个链表中
+//
+// Parameters:
+//      src_climber              - source of the climber's name
+//      dst_climber              - target of the climber's name
+//      head                     - head of the linked list of the attempt
+//
+// Returns:
+//      temporary linked list of attempt    
+struct attempt *select_attempts(char *src_climber, char *dst_climber, struct attempt *head) {
+    struct attempt *current_attempt = head;
+    struct attempt *dumplicate_stack_head = NULL;
+    struct attempt *new_attempt = NULL;
+    struct attempt *dst_climber_attempt = search_for_attempt(dst_climber, head);
+    while(current_attempt != NULL) {
+        if(strcmp(current_attempt->climber, src_climber) == 0) {
+            enum attempt_type type;
+            if(current_attempt->type == FIRST_GO && dst_climber_attempt) {
+                type = SUCCESS;
+            } else {
+                type = current_attempt->type;
+            }
+            new_attempt = create_attempt(dst_climber, type, current_attempt->rating);
+            if(dumplicate_stack_head == NULL) {
+                dumplicate_stack_head = new_attempt;
+            } else {
+                new_attempt->next = dumplicate_stack_head;
+                dumplicate_stack_head = new_attempt;
+            }
+        }
+        current_attempt = current_attempt->next;
+    }
+
+    return dumplicate_stack_head;
+}
+
+// 将临时 attempt 链表中的 attempt 插入至指定的 route 中
+//
+// Parameters:
+//      head                     - head of the linked list of the attempt
+//      current_route            - target route pointer
+//
+// Returns:
+//      void
+void copy_attempts_to_dst(struct attempt *head, struct route *current_route) {
+    struct attempt *current_attempt = head;
+    while(current_attempt != NULL) {
+        struct attempt *new_head = insert_climber_latest_attempt(current_attempt->climber, current_attempt->type, current_attempt->rating, current_route);
+        if(new_head != NULL) {
+            current_route->attempts = new_head;
+            printf("Logged attempt of '%s' by %s\n", current_route->name, current_attempt->climber);
+        }
+        current_attempt = current_attempt->next;
+    }
+}
+
+
 // 将源 climber 在 route 链表中出现的所有 attempt 复制给目标 climber
 //
 // Parameters:
@@ -744,40 +805,14 @@ int remove_climbers_attempts(char *climber, struct route *head_route) {
 void duplicate_attempts(char *src_climber, char *dst_climber, struct route *head_route) {
     struct route *current_route = head_route;
     while(current_route != NULL) {
-        struct attempt *current_attempt = current_route->attempts;
         struct attempt *dumplicate_stack_head = NULL;
-        struct attempt *new_attempt = NULL;
-        struct attempt *dst_climber_attempt = search_for_attempt(dst_climber, current_route->attempts);
-        while(current_attempt != NULL) {
-            if(strcmp(current_attempt->climber, src_climber) == 0) {
-                enum attempt_type type;
-                if(current_attempt->type == FIRST_GO && dst_climber_attempt) {
-                    type = SUCCESS;
-                } else {
-                    type = current_attempt->type;
-                }
-                new_attempt = create_attempt(dst_climber, type, current_attempt->rating);
-                if(dumplicate_stack_head == NULL) {
-                    dumplicate_stack_head = new_attempt;
-                } else {
-                    new_attempt->next = dumplicate_stack_head;
-                    dumplicate_stack_head = new_attempt;
-                }
-            }
-            current_attempt = current_attempt->next;
-        }
+                
+        dumplicate_stack_head = select_attempts(src_climber, dst_climber, current_route->attempts);
+
         if(dumplicate_stack_head == NULL) {
             printf("ERROR: %s has not logged any attempts\n", src_climber);
         } else {
-            current_attempt = dumplicate_stack_head;
-            while(current_attempt != NULL) {
-                struct attempt *new_head = insert_climber_latest_attempt(current_attempt->climber, current_attempt->type, current_attempt->rating, current_route);
-                if(new_head != NULL) {
-                    current_route->attempts = new_head;
-                    printf("Logged attempt of '%s' by %s\n", current_route->name, current_attempt->climber);
-                }
-                current_attempt = current_attempt->next;
-            }
+            copy_attempts_to_dst(dumplicate_stack_head, current_route);
         }
         free_attempt_memory(dumplicate_stack_head);
         current_route = current_route->next;
